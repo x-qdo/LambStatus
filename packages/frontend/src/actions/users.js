@@ -1,11 +1,24 @@
 import 'whatwg-fetch'
-import { push } from 'react-router-redux'
-import { CognitoUserPool, AuthenticationDetails, CognitoUser } from 'amazon-cognito-identity-js'
-import { userPoolId, clientId } from 'utils/settings'
+import {push} from 'react-router-redux'
+import {CognitoUserPool, AuthenticationDetails, CognitoUser} from 'amazon-cognito-identity-js'
+import {CognitoAuth} from 'amazon-cognito-auth-js'
+import {userPoolId, clientId} from 'utils/settings'
 
 export const GET_USER = 'GET_USER'
 
-export function getUser (user) {
+function poolDataLoader() {
+  const url = new URL(window.location.href);
+  return {
+    UserPoolId: userPoolId,
+    ClientId: clientId,
+    AppWebDomain: 'skybonds-statuspage.auth.eu-west-1.amazoncognito.com',
+    RedirectUriSignIn: url.origin + '/signin',
+    RedirectUriSignOut: url.origin + '/signout',
+    TokenScopesArray: ['email', 'openid'],
+  }
+}
+
+export function getUser(user) {
   return {
     type: GET_USER,
     user
@@ -15,7 +28,7 @@ export function getUser (user) {
 // cognito library automatically sets signin results to local storage.
 // So, we do not save the results to ReduxStore.
 export const signin = (username, password, callbacks = {}) => {
-  const { onLoad, onNewPasswordRequested, onSuccess, onFailure } = callbacks
+  const {onLoad, onNewPasswordRequested, onSuccess, onFailure} = callbacks
   return dispatch => {
     if (onLoad && typeof onLoad === 'function') onLoad()
     const authenticationData = {
@@ -63,7 +76,7 @@ export const signin = (username, password, callbacks = {}) => {
 }
 
 export const setNewPassword = (dispatch, cognitoUser, newPassword, callbacks = {}) => {
-  const { onLoad, onSuccess, onFailure } = callbacks
+  const {onLoad, onSuccess, onFailure} = callbacks
   if (onLoad && typeof onLoad === 'function') onLoad()
 
   cognitoUser.completeNewPasswordChallenge(newPassword, {}, {
@@ -99,26 +112,60 @@ export const fetchUser = () => {
   }
 }
 
+export const checkCode = (callbacks) => {
+  const {onSuccess, onFailure} = callbacks
+
+  const poolData = poolDataLoader()
+  const auth = new CognitoAuth(poolData);
+  auth.userhandler = {
+    onSuccess: function (session) {
+      console.log("Sign in success");
+      onSuccess()
+    },
+    onFailure: function (err) {
+      onFailure()
+    }
+  };
+  auth.useCodeGrantFlow();
+  auth.parseCognitoWebResponse(window.location.href);
+}
+
+export const signinOKTA = (callbacks) => {
+  const {onSuccess, onFailure} = callbacks
+  const poolData = poolDataLoader()
+  const auth = new CognitoAuth(poolData);
+  auth.userhandler = {
+    onSuccess: function (session) {
+      console.log("Sign in progress");
+      onSuccess()
+    },
+    onFailure: function (err) {
+      onFailure()
+    }
+  };
+  auth.useCodeGrantFlow();
+  auth.getSession();
+}
+
 export const isAuthorized = (callback) => {
-  const poolData = {
-    UserPoolId: userPoolId,
-    ClientId: clientId
-  }
+  const poolData = poolDataLoader()
+
   const userPool = new CognitoUserPool(poolData)
   const cognitoUser = userPool.getCurrentUser()
   if (cognitoUser === null) {
-    callback(false)
-    return
+    const auth = new CognitoAuth(poolData);
+    auth.useCodeGrantFlow();
+    callback(auth.isUserSignedIn())
+  } else {
+    cognitoUser.getSession(function (err, session) {
+      if (err) {
+        console.warn(err.message)
+        callback(false)
+        return
+      }
+      callback(true)
+    })
   }
-
-  cognitoUser.getSession(function (err, session) {
-    if (err) {
-      console.warn(err.message)
-      callback(false)
-      return
-    }
-    callback(true)
-  })
 }
 
 export const signout = () => {
@@ -138,7 +185,7 @@ export const signout = () => {
 }
 
 export const forgotPassword = (username, callbacks = {}) => {
-  const { onLoad, onSuccess, onFailure } = callbacks
+  const {onLoad, onSuccess, onFailure} = callbacks
   return dispatch => {
     if (onLoad && typeof onLoad === 'function') onLoad()
     const poolData = {
@@ -165,7 +212,7 @@ export const forgotPassword = (username, callbacks = {}) => {
 }
 
 export const setCodeAndPassword = (verificationCode, username, password, callbacks = {}) => {
-  const { onLoad, onSuccess, onFailure } = callbacks
+  const {onLoad, onSuccess, onFailure} = callbacks
   return dispatch => {
     if (onLoad && typeof onLoad === 'function') onLoad()
     const poolData = {

@@ -4,8 +4,6 @@
 [![wercker status](https://app.wercker.com/status/fcb6fb7398629e934ae0538737021d14/s/master "wercker status")](https://app.wercker.com/project/byKey/fcb6fb7398629e934ae0538737021d14)
 [![API Document](https://img.shields.io/badge/api-v0-blue.svg)](https://lambstatus.github.io/apidocs/)
 
-*The project is now in the maintenance mode. Only critical bugs will be fixed, and there won’t be any more feature development. Also, the project will be archived after the end of February 2020. So please consider moving to other projects like [Cachet](https://github.com/CachetHQ/Cachet).*
-
 LambStatus is the serverless status page system. [See our website](https://lambstatus.github.io/) for features.
 
 ## Demo

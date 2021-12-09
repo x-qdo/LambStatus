@@ -1,10 +1,10 @@
-import React, { PropTypes } from 'react'
+import React, {PropTypes} from 'react'
 import ReactDOM from 'react-dom'
 import classnames from 'classnames'
 import Button from 'components/common/Button'
 import ErrorMessage from 'components/common/ErrorMessage'
 import TextField from 'components/common/TextField'
-import { mountDialog, unmountDialog, innerDialogID } from 'utils/dialog'
+import {mountDialog, unmountDialog, innerDialogID} from 'utils/dialog'
 import classes from './Signin.scss'
 
 const dialogType = {
@@ -17,11 +17,14 @@ const dialogType = {
 export default class Signin extends React.Component {
   static propTypes = {
     signin: PropTypes.func.isRequired,
+    signinOKTA: PropTypes.func.isRequired,
+    checkCode: PropTypes.func.isRequired,
     forgotPassword: PropTypes.func.isRequired,
-    setCodeAndPassword: PropTypes.func.isRequired
+    setCodeAndPassword: PropTypes.func.isRequired,
+    push: PropTypes.func.isRequired
   }
 
-  constructor () {
+  constructor() {
     super()
     this.state = {
       dialogType: dialogType.signin,
@@ -34,8 +37,9 @@ export default class Signin extends React.Component {
     }
   }
 
-  componentDidMount () {
+  componentDidMount() {
     mountDialog(ReactDOM.findDOMNode(this.refs.dialog))
+    this.props.checkCode(this.updateCallbacks)
   }
 
   handleChangeUsername = (value) => {
@@ -51,10 +55,13 @@ export default class Signin extends React.Component {
   }
 
   updateCallbacks = {
-    onLoad: () => { this.setState({isUpdating: true, message: ''}) },
+    onLoad: () => {
+      this.setState({isUpdating: true, message: ''})
+    },
     onSuccess: () => {
       this.setState({isUpdating: false, message: ''})
       this.handleHideDialog()
+      this.props.push('/')
     },
     onFailure: (msg) => {
       this.setState({isUpdating: false, message: msg})
@@ -67,6 +74,12 @@ export default class Signin extends React.Component {
       message: '',
       dialogType: dialogType.signin
     })
+  }
+
+  handleClickSigninWithOktaButton = (e) => {
+    if (this.state.isUpdating) return
+
+    this.props.signinOKTA(this.updateCallbacks)
   }
 
   handleClickSigninButton = (e) => {
@@ -98,7 +111,7 @@ export default class Signin extends React.Component {
   handleSetNewPasswordButton = (e) => {
     if (this.state.isUpdating) return
 
-    const { password, newPasswordCallback } = this.state
+    const {password, newPasswordCallback} = this.state
     if (newPasswordCallback && typeof newPasswordCallback === 'function') {
       newPasswordCallback(password, this.updateCallbacks)
     } else {
@@ -147,17 +160,20 @@ export default class Signin extends React.Component {
         Sign in
       </h2>
       <div className='mdl-dialog__content'>
-        <ErrorMessage message={this.state.message} />
-        <TextField label='Email Address' text={this.state.username} rows={1} onChange={this.handleChangeUsername} />
+        <ErrorMessage message={this.state.message}/>
+        <TextField label='Email Address' text={this.state.username} rows={1} onChange={this.handleChangeUsername}/>
         <TextField label='Password' text={this.state.password} rows={1}
-          onChange={this.handleChangePassword} onEnterKey={this.handleClickSigninButton} hideText />
+                   onChange={this.handleChangePassword} onEnterKey={this.handleClickSigninButton} hideText/>
         <div className={classes.forgotPassword} onClick={this.handleClickForgotButton}>
           Forgot Password?
         </div>
       </div>
       <div className='mdl-dialog__actions'>
         <Button onClick={this.handleClickSigninButton} name='Signin'
-          class='mdl-button--accent' disabled={this.state.isUpdating} />
+                class='mdl-button--accent' disabled={this.state.isUpdating}/>
+        <Button onClick={this.handleClickSigninWithOktaButton}
+                name='OKTA'
+                class='mdl-button--accent' disabled={this.state.isUpdating}/>
       </div>
     </dialog>)
   }
@@ -171,13 +187,13 @@ export default class Signin extends React.Component {
         <div>
           Login successful. Now, set your own password.
         </div>
-        <ErrorMessage message={this.state.message} />
+        <ErrorMessage message={this.state.message}/>
         <TextField label='New Password' text={this.state.password} rows={1}
-          onChange={this.handleChangePassword} onEnterKey={this.handleSetNewPasswordButton} hideText />
+                   onChange={this.handleChangePassword} onEnterKey={this.handleSetNewPasswordButton} hideText/>
       </div>
       <div className='mdl-dialog__actions'>
         <Button onClick={this.handleSetNewPasswordButton} name='DONE'
-          class='mdl-button--accent' disabled={this.state.isUpdating} />
+                class='mdl-button--accent' disabled={this.state.isUpdating}/>
       </div>
     </dialog>)
   }
@@ -191,14 +207,14 @@ export default class Signin extends React.Component {
         <div>
           Enter your email address. A verification code will be sent to the address.
         </div>
-        <ErrorMessage message={this.state.message} />
+        <ErrorMessage message={this.state.message}/>
         <TextField label='Email Address' text={this.state.username} rows={1} onChange={this.handleChangeUsername}
-          onEnterKey={this.handleClickSendCodeButton} />
+                   onEnterKey={this.handleClickSendCodeButton}/>
       </div>
       <div className='mdl-dialog__actions'>
         <Button onClick={this.handleClickSendCodeButton} name='Send verification code'
-          class='mdl-button--accent' disabled={this.state.isUpdating} />
-        <Button onClick={this.showSignInDialog} name='Cancel' />
+                class='mdl-button--accent' disabled={this.state.isUpdating}/>
+        <Button onClick={this.showSignInDialog} name='Cancel'/>
       </div>
     </dialog>)
   }
@@ -212,15 +228,15 @@ export default class Signin extends React.Component {
         <div>
           Email has been sent to your address. Enter the verification code in the email and set new password.
         </div>
-        <ErrorMessage message={this.state.message} />
-        <TextField label='Verification code' text={this.state.code} rows={1} onChange={this.handleChangeCode} />
+        <ErrorMessage message={this.state.message}/>
+        <TextField label='Verification code' text={this.state.code} rows={1} onChange={this.handleChangeCode}/>
         <TextField label='Password' text={this.state.password} rows={1}
-          onChange={this.handleChangePassword} onEnterKey={this.handleClickSetCodeButton} hideText />
+                   onChange={this.handleChangePassword} onEnterKey={this.handleClickSetCodeButton} hideText/>
       </div>
       <div className='mdl-dialog__actions'>
         <Button onClick={this.handleClickSetCodeButton} name='Done'
-          class='mdl-button--accent' disabled={this.state.isUpdating} />
-        <Button onClick={this.showSignInDialog} name='Cancel' />
+                class='mdl-button--accent' disabled={this.state.isUpdating}/>
+        <Button onClick={this.showSignInDialog} name='Cancel'/>
       </div>
     </dialog>)
   }
@@ -240,7 +256,7 @@ export default class Signin extends React.Component {
     }
   }
 
-  render () {
+  render() {
     const dialog = this.renderDialog()
     return (<div id={innerDialogID}>
       {dialog}

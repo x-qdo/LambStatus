@@ -5,7 +5,7 @@ import packageJSON from '../package.json'
 
 dotenv.config({path: `${__dirname}/../../../.env`})
 const { REGION: region } = process.env
-const releaseBucketName = 'lambstatus'
+const releaseBucketName = 'com.skybonds.prod.status.page.source'
 const stopIfObjectsExist = (process.argv[2] !== '--force')
 
 const release = async (dir, prefix) => {
